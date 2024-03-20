@@ -27,7 +27,7 @@ class NotebookPostRequest extends FormRequest
             'phone' => 'required',
             'email' => 'required',
             'born_date' => '',
-            'photo' => '',
+            'photo' => 'required',
         ];
     }
 }
