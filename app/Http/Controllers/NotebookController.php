@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\NotebookPostRequest;
 use App\Http\Requests\NotebookUpdateRequest;
 use App\Models\Notebook;
+use App\Services\NotebookService;
 use Illuminate\Http\Request;
 use Laravel\Prompts\Note;
 
@@ -278,13 +279,19 @@ class NotebookController extends Controller
      * 
      */
 
+    private $service;
+    public function __construct(NotebookService $service)
+    {
+        $this->service = $service;
+    }
     public function index(Request $request)
     {
 
-        $page = $request->get('page', 1);
         $limit = $request->get('limit', 10);
+        $page = $request->get('page', 1);
 
-        $notes = Notebook::paginate($limit, ['*'], '', $page);
+        $notes = $this->service->index($limit, $page);
+
         return response()->json([
             'notebooks' => $notes
         ]);
@@ -305,17 +312,12 @@ class NotebookController extends Controller
     {
         $data = $request->validated();
 
-        if ($request->hasFile('photo')) {
-            $file = $request->file('photo');
+        $store = $this->service->store($request, $data);
 
-            $data['photo'] = $file->store('public/photos');
-        }
-
-        $store = Notebook::create($data);
         if ($store) {
             return response()->json([
                 'status' => 'success'
-            ]);
+            ], 201);
         }
     }
 
@@ -324,15 +326,18 @@ class NotebookController extends Controller
      */
     public function show($id)
     {
-        $notebook = Notebook::find($id);
+
+        $notebook = $this->service->show($id);
 
         if (!$notebook) {
-            return response()->json(['error' => 'Notebook not found'], 404);
+            return response()->json([
+                'error' => 'Note not found'
+            ]);
         }
 
         return response()->json([
             'notebook' => $notebook
-        ]);
+        ], 200);
     }
 
     /**
@@ -350,46 +355,16 @@ class NotebookController extends Controller
     {
 
         $notebook = Notebook::find($id);
+
+        if (!$notebook) {
+            return response()->json([
+                'error' => 'Note not found'
+            ],404);
+        }
+        
         $data = $request->validated();
 
-        if ($request->hasFile('photo')) {
-            $file = $request->file('photo');
-            // Выполните необходимые действия с файлом, например, сохраните его
-            $data['photo'] = $file->store('photos'); // Сохраняет файл в хранилище Laravel
-
-        }
-        // var_dump($notebook->get()->pluck('id'));
-        if (isset($data['fio'])) {
-            $update = $notebook->update([
-                'fio' => $data['fio']
-            ]);
-        }
-        if (isset($data['company'])) {
-
-            $update = $notebook->update([
-                'company' => $data['company']
-            ]);
-        }
-        if (isset($data['phone'])) {
-            $update = $notebook->update([
-                'phone' => $data['phone']
-            ]);
-        }
-        if (isset($data['email'])) {
-            $update = $notebook->update([
-                'email' => $data['email']
-            ]);
-        }
-        if (isset($data['born_date'])) {
-            $update = $notebook->update([
-                'born_date' => $data['born_date']
-            ]);
-        }
-        if (isset($data['photo'])) {
-            $update = $notebook->update([
-                'photo' => $data['photo']
-            ]);
-        }
+        $update = $this->service->update($request, $notebook, $data);
 
         if ($update) {
             return response()->json([
@@ -410,12 +385,19 @@ class NotebookController extends Controller
     public function destroy($id)
     {
         $notebook = Notebook::find($id);
-        $delete = $notebook->delete();
+
+        if (!$notebook) {
+            return response()->json([
+                'error' => 'Note not found'
+            ]);
+        }
+
+        $delete = $this->service->destroy($notebook);
 
         if ($delete) {
             return response()->json([
                 'status' => 'success'
-            ]);
+            ], 204);
         }
 
         return response()->json([

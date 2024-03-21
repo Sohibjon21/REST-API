@@ -2,10 +2,26 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\Response;
+
+use Symfony\Component\HttpFoundation\Response as HttpFoundationResponse;
 
 class NotebookPostRequest extends FormRequest
 {
+
+    // protected function failedValidation(Validator $validator)
+    // {
+    //     throw new HttpResponseException(response()->json([
+    //         'status' => 'error',
+    //         'message' => 'Bad Request',
+            
+    //     ], HttpFoundationResponse::HTTP_UNPROCESSABLE_ENTITY));
+    // }
+
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -27,7 +43,7 @@ class NotebookPostRequest extends FormRequest
             'phone' => 'required',
             'email' => 'required',
             'born_date' => '',
-            'photo' => 'required',
+            'photo' => '',
         ];
     }
 }
